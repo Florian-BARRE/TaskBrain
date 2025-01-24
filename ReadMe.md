@@ -399,3 +399,13 @@ if __name__ == "__main__":
 1. **Initialisation du Logger** : On crée un logger avec un niveau de débogage qui affiche les logs dans la console (`print_log=True`).
 2. **Initialisation du Brain** : On initialise le `MainBrain` avec deux attributs partagés (`share_attr1` et `share_attr2`) et le logger.
 3. **Exécution des Tâches** : On récupère toutes les tâches du Brain via `brain.get_tasks()` et on les exécute en les regroupant avec `asyncio.gather()`. Ce script illustre la manière dont vous pouvez initialiser et exécuter les différentes tâches de votre Brain, y compris les tâches asynchrones, les routines, et le multiprocessing.
+
+Voici une suggestion pour une signature élégante à la fin de votre README : 
+
+---
+
+### Auteur
+
+Projet créé et maintenu par **Florian BARRE**.  
+Pour toute question ou contribution, n'hésitez pas à me contacter.
+[Mon Site](https://florianbarre.fr/) | [Mon LinkedIn](www.linkedin.com/in/barre-florian) | [Mon GitHub](https://github.com/Florian-BARRE)
