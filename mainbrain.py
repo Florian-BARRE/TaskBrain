@@ -1,6 +1,9 @@
+# ====== Standard Library Imports ======
 import asyncio
 
-from brain import Brain
+# ====== Internal Project Imports ======
+from brain.brain import Brain
+from brain.task_output import TaskOutput
 from logger import Logger, LogLevels
 
 
@@ -106,9 +109,15 @@ class MainBrain(Brain):
     async def call_tasks(self):
         await asyncio.sleep(10)  # Wait timed task to finish
         self.logger.log("[MP] Call tasks", LogLevels.INFO)
-        f1_result = await self.callable_function_1()
-        f2_result = await self.callable_function_2()  # Call the subprocess synchronous function as async one
+        f1_result: TaskOutput = await self.callable_function_1()
+        f2_result: TaskOutput = await self.callable_function_2()  # Call the subprocess synchronous function as async one
 
-        self.logger.log(f"[MP] Callable function 1 result: {f1_result.result}", LogLevels.INFO)
+        self.logger.log(
+            f"[MP] Callable function 1 result: {f1_result}",
+            LogLevels.INFO
+        )
         # Can't get result because the function run in another process
-        self.logger.log(f"[MP] Callable function 2 result: {f2_result.result}", LogLevels.INFO)
+        self.logger.log(
+            f"[MP] Callable function 2 result: {f2_result}",
+            LogLevels.INFO
+        )
