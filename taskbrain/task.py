@@ -3,9 +3,8 @@ import functools
 from typing import TypeVar, Callable, Any, Optional, Coroutine
 
 # ====== Internal Project Imports ======
-from logger import LogLevels
-from brain.task_wrappers import SynchronousWrapper, AsynchronousWrapper
-from brain.task_output import TaskOutput
+from taskbrain.task_wrappers import SynchronousWrapper, AsynchronousWrapper
+from taskbrain.task_output import TaskOutput
 
 # ====== Type Hints ======
 TBrain = TypeVar("TBrain", bound="Brain")
@@ -132,9 +131,8 @@ class Task:
             )
         # Unknown task type
         else:
-            brain_executor.logger.log(
-                f"Task-evaluation: error while wrapping [{self.name}] task. Task type unknown !",
-                LogLevels.ERROR,
+            brain_executor.logger.error(
+                f"Task-evaluation: error while wrapping [{self.name}] task. Task type unknown !"
             )
             raise ValueError(
                 f"Task-evaluation: error while wrapping [{self.name}] task. Task type unknown !"
@@ -175,9 +173,8 @@ class Task:
             )
         # Unknown task type
         else:
-            brain_executor.logger.log(
+            brain_executor.logger.error(
                 f"Task-evaluation: error while wrapping [{self.name}] task. Task type unknown !",
-                LogLevels.ERROR,
             )
             raise ValueError(
                 f"Task-evaluation: error while wrapping [{self.name}] task. Task type unknown !"

@@ -5,10 +5,10 @@ from types import FrameType
 from typing import TypeVar, Any, Callable
 
 # ====== Internal Project Imports ======
-from logger import Logger, LogLevels
+from loggerplusplus import Logger
 
-from brain.task import Task, AsynchronousWrapper
-from brain.dict_proxy import DictProxyAccessor
+from taskbrain.task import Task, AsynchronousWrapper
+from taskbrain.dict_proxy import DictProxyAccessor
 
 # ====== Type Hints ======
 TBrain = TypeVar("TBrain", bound="Brain")
@@ -44,6 +44,11 @@ class Brain:
     Subprocesses are useful to execute heavy tasks or tasks that can block the main process.
     """
 
+    _pending_tasks: tuple[
+        Callable,
+        tuple[bool, bool, float | int, float | int, bool, str]
+    ] = []  # Store pending tasks before instantiation
+
     def __init__(self, logger: Logger, child: TBrain) -> None:
         """
         This constructor have to be called in the end of  __init__ method of the child class.
@@ -61,6 +66,16 @@ class Brain:
         self.__processes: list = []
         self.__async_functions: list = []
 
+        # Register current brain's pending tasks at instantiation
+        self._tasks: list[Task] = []
+
+        for i in range(len(self._pending_tasks) - 1, -1, -1):  # Reverse loop to avoid index error
+            func, args = self._pending_tasks[i]
+            # Add the task only if the function is in the current brain instantiation
+            if func.__qualname__.split('.')[0] == child.__str__():
+                self._tasks.append(Task(func, *args))
+                self._pending_tasks.pop(i)
+
         child.dynamic_init()
 
     """
@@ -75,7 +90,8 @@ class Brain:
         * The attributes of the child class will be initialized, based on the parameters of the caller.
         They will have the same name as the parameters of the child's __init__.
         * This method will also instantiate the shared_self attribute, which is a clone of the actual self but
-        accessible by processes. It is a DictProxyAccessor object. It will only contain public and serializable attributes.
+        accessible by processes. It is a DictProxyAccessor object. It will only contain public and
+        serializable attributes.
         """
         # Get the frame of the caller (the __init__ method of the child class)
         frame: FrameType = inspect.currentframe().f_back.f_back
@@ -99,9 +115,8 @@ class Brain:
                 if DictProxyAccessor.is_serialized(value):
                     setattr(self.shared_self, name, value)
                 else:
-                    self.logger.log(
-                        f"[dynamic_init] cannot serialize attribute [{name}].",
-                        LogLevels.WARNING,
+                    self.logger.warning(
+                        f"[dynamic_init] cannot serialize attribute [{name}]."
                     )
 
     """
@@ -132,9 +147,9 @@ class Brain:
             run_on_start: bool,
             # Params with default value
             refresh_rate: float | int = -1,
-            timeout: int = -1,
+            timeout: float | int = -1,
             define_loop_later: bool = False,
-            start_loop_marker="# ---Loop--- #",
+            start_loop_marker: str = "# ---Loop--- #",
     ) -> Callable:
         """
         Decorator to add a task function to the brain. There are 3 cases:
@@ -156,18 +171,10 @@ class Brain:
         """
 
         def decorator(func: Callable) -> Callable:
-            if not hasattr(cls, "_tasks"):
-                cls._tasks: list[Task] = []
-
-            cls._tasks.append(
-                Task(
+            cls._pending_tasks.append(
+                (
                     func,
-                    process,
-                    run_on_start,
-                    refresh_rate,
-                    timeout,
-                    define_loop_later,
-                    start_loop_marker,
+                    (process, run_on_start, refresh_rate, timeout, define_loop_later, start_loop_marker)
                 )
             )
             return func

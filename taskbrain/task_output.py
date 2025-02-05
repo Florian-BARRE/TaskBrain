@@ -2,7 +2,7 @@
 from typing import Any
 
 # ====== Internal Project Imports ======
-from brain.execution_states import ExecutionStates
+from taskbrain.execution_states import ExecutionStates
 
 
 # ====== Class Part ======
