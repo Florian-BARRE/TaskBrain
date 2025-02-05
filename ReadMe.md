@@ -86,7 +86,7 @@ La principale restriction quant à l’utilisation de cette fonctionnalité est 
 
 ```python
 serialized_types = (
-    Logger,
+    Logger, # Logger from loggerplusplus library is serialized since V0.1.2
     int,
     float,
     str,
@@ -261,7 +261,7 @@ Voici un exemple complet d'utilisation de votre module Brain avec une explicatio
 ```python
 import asyncio
 from brain import Brain
-from logger import Logger, LogLevels
+from loggerplusplus import Logger
 
 class MainBrain(Brain):
     def __init__(self, logger: Logger, share_attr1: int, share_attr2: int) -> None:
@@ -277,9 +277,9 @@ class MainBrain(Brain):
 
     @Brain.task(process=False, run_on_start=True)
     async def mp_start(self):
-        self.logger.log("[MP] MainBrain started", LogLevels.INFO)
+        self.logger.info("[MP] MainBrain started")
         public_attributes = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
-        self.logger.log(f"[MP] Public attributes: {public_attributes}", LogLevels.INFO)
+        self.logger.info(f"[MP] Public attributes: {public_attributes}")
 
     """ Routine Tasks """
 
@@ -287,7 +287,7 @@ class MainBrain(Brain):
     async def mp_states_display(self):
         attributes_public = {k: v for k, v in self.__dict__.items() if
                              not k.startswith('_') and k.__str__() != "logger"}
-        self.logger.log(f"[MP] Attributes states: {attributes_public}", LogLevels.INFO)
+        self.logger.info(f"[MP] Attributes states: {attributes_public}")
 
     @Brain.task(process=False, run_on_start=True, refresh_rate=1)
     async def mp_incrementer(self):
@@ -307,12 +307,12 @@ class MainBrain(Brain):
 
     @Brain.task(process=True, run_on_start=True)
     def sb_start(self):
-        self.logger.log("[SP] MainBrain started in another process", LogLevels.INFO)
+        self.logger.info("[SP] MainBrain started in another process")
         shared_attributes = {
             "share_attr1": self.share_attr1,
             "share_attr2": self.share_attr2
         }
-        self.logger.log(f"[SP] Public attributes available in this subprocess: {shared_attributes}", LogLevels.INFO)
+        self.logger.info(f"[SP] Public attributes available in this subprocess: {shared_attributes}")
 
     """ Routine Tasks """
 
@@ -322,7 +322,7 @@ class MainBrain(Brain):
             "share_attr1": self.share_attr1,
             "share_attr2": self.share_attr2
         }
-        self.logger.log(f"[SP] Attributes states: {shared_attributes}", LogLevels.INFO)
+        self.logger.info(f"[SP] Attributes states: {shared_attributes}")
 
     @Brain.task(process=True, run_on_start=True, refresh_rate=1)
     def sb_incrementer(self):
@@ -337,29 +337,29 @@ class MainBrain(Brain):
     def sb_routine_with_setup(self):
         sb_non_serializable_attribute = "I'm not serializable attribute"
         # ---Loop--- #
-        self.logger.log(f"[SP] Non-serializable attribute: {sb_non_serializable_attribute}", LogLevels.INFO)
+        self.logger.info(f"[SP] Non-serializable attribute: {sb_non_serializable_attribute}")
 
     """ Call others tasks """
 
     @Brain.task(process=False, run_on_start=False)
     async def callable_function_1(self):
-        self.logger.log("[MP] Callable function 1", LogLevels.INFO)
+        self.logger.info("[MP] Callable function 1")
         return 1
 
     @Brain.task(process=True, run_on_start=False)
     def callable_function_2(self):
-        self.logger.log("[SP] Callable function 2", LogLevels.INFO)
+        self.logger.info("[SP] Callable function 2")
         return 2
 
     @Brain.task(process=False, run_on_start=True)
     async def call_tasks(self):
         await asyncio.sleep(10)  # Wait timed task to finish
-        self.logger.log("[MP] Call tasks", LogLevels.INFO)
+        self.logger.info("[MP] Call tasks")
         f1_result = await self.callable_function_1()
         f2_result = await self.callable_function_2()
 
-        self.logger.log(f"[MP] Callable function 1 result: {f1_result.result}", LogLevels.INFO)
-        self.logger.log(f"[MP] Callable function 2 result: {f2_result.result}", LogLevels.INFO)
+        self.logger.info(f"[MP] Callable function 1 result: {f1_result.result}")
+        self.logger.info(f"[MP] Callable function 2 result: {f2_result.result}")
 ```
 
 ## Utilisation dans un Main
@@ -368,16 +368,16 @@ Voici comment vous pouvez intégrer et démarrer votre Brain dans un script prin
 
 ```python
 import asyncio
-from mainbrain import MainBrain
-from logger import Logger, LogLevels
+from exemple.mainbrain import MainBrain
+from loggerplusplus import Logger
 
 if __name__ == "__main__":
     brain_logger = Logger(
         identifier="Brain",
-        decorator_level=LogLevels.DEBUG,
-        print_log_level=LogLevels.DEBUG,
         print_log=True,
-        write_to_file=False
+        write_to_file=False,
+        display_monitoring=False,
+        files_monitoring=False,
     )
 
     brain = MainBrain(
@@ -386,10 +386,12 @@ if __name__ == "__main__":
         share_attr2=0
     )
 
+
     # Start tasks
     async def run_tasks():
         tasks = [task() for task in brain.get_tasks()]
         return await asyncio.gather(*tasks)
+
 
     asyncio.run(run_tasks())
 ```

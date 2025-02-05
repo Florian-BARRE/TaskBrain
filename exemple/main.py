@@ -1,19 +1,21 @@
 # ====== Standard Library Imports ======
 import asyncio
 
+# ====== Third-Party Imports ======
+from loggerplusplus import Logger
+
 # ====== Internal Project Imports ======
 from mainbrain import MainBrain
-from logger import Logger, LogLevels
 
 # ====== Main Execution ======
 if __name__ == "__main__":
     # Initialize the logger with specified logging levels and configurations.
     brain_logger = Logger(
         identifier="Brain",
-        decorator_level=LogLevels.DEBUG,
-        print_log_level=LogLevels.DEBUG,
         print_log=True,
-        write_to_file=False
+        write_to_file=False,
+        display_monitoring=False,
+        files_monitoring=False,
     )
 
     # Create the MainBrain instance with the initialized logger and shared attributes.

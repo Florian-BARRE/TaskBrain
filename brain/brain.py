@@ -5,7 +5,7 @@ from types import FrameType
 from typing import TypeVar, Any, Callable
 
 # ====== Internal Project Imports ======
-from logger import Logger, LogLevels
+from loggerplusplus import Logger
 
 from brain.task import Task, AsynchronousWrapper
 from brain.dict_proxy import DictProxyAccessor
@@ -115,9 +115,8 @@ class Brain:
                 if DictProxyAccessor.is_serialized(value):
                     setattr(self.shared_self, name, value)
                 else:
-                    self.logger.log(
-                        f"[dynamic_init] cannot serialize attribute [{name}].",
-                        LogLevels.WARNING,
+                    self.logger.warning(
+                        f"[dynamic_init] cannot serialize attribute [{name}]."
                     )
 
     """
