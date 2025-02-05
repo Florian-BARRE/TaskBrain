@@ -3,8 +3,8 @@ import functools
 from typing import TypeVar, Callable, Any, Optional, Coroutine
 
 # ====== Internal Project Imports ======
-from brain.task_wrappers import SynchronousWrapper, AsynchronousWrapper
-from brain.task_output import TaskOutput
+from taskbrain.task_wrappers import SynchronousWrapper, AsynchronousWrapper
+from taskbrain.task_output import TaskOutput
 
 # ====== Type Hints ======
 TBrain = TypeVar("TBrain", bound="Brain")

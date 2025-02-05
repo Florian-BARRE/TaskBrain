@@ -5,8 +5,8 @@ import asyncio
 from loggerplusplus import Logger
 
 # ====== Internal Project Imports ======
-from brain.brain import Brain
-from brain.task_output import TaskOutput
+from taskbrain.brain import Brain
+from taskbrain.task_output import TaskOutput
 
 
 class MainBrain(Brain):

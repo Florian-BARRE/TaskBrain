@@ -11,9 +11,9 @@ import functools
 from typing import TypeVar, Callable, Any, Coroutine
 
 # ====== Internal Project Imports ======
-from brain.execution_states import ExecutionStates
-from brain.dict_proxy import DictProxyAccessor
-from brain.task_output import TaskOutput
+from taskbrain.execution_states import ExecutionStates
+from taskbrain.dict_proxy import DictProxyAccessor
+from taskbrain.task_output import TaskOutput
 
 # ====== Type Hints ======
 TBrain = TypeVar("TBrain", bound="Brain")

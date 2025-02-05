@@ -7,8 +7,8 @@ from typing import TypeVar, Any, Callable
 # ====== Internal Project Imports ======
 from loggerplusplus import Logger
 
-from brain.task import Task, AsynchronousWrapper
-from brain.dict_proxy import DictProxyAccessor
+from taskbrain.task import Task, AsynchronousWrapper
+from taskbrain.dict_proxy import DictProxyAccessor
 
 # ====== Type Hints ======
 TBrain = TypeVar("TBrain", bound="Brain")
