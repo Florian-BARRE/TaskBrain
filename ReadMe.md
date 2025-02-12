@@ -119,7 +119,7 @@ This **shared copy** is a **proxy dictionary**, a **special type from Python's `
 The **main limitation** when using this feature is **the type of class attributes** that can be shared through the *
 *proxy dictionary**.
 
-### **Supported serializable types**:
+### **Native supported serializable types**:
 
 ```python
 serialized_types = (
@@ -137,6 +137,36 @@ serialized_types = (
 
 Complex objects **cannot** be shared **directly** between processes. To work around this, you can **instantiate** the
 object **inside the process**.
+
+#### **Adding New Serializable Types**
+
+Since version 0.1.2, it is possible to dynamically add new types to the set of serializable types using the method:
+
+```python
+@classmethod
+def add_serializable_type(cls, new_type: type, test_instance: Any = None) -> bool
+```
+
+##### **Usage Examples**
+
+You can add a new type **before** the instantiation of the brain via the `DictProxyAccessor`. For example:
+
+```python
+from taskbrain import DictProxyAccessor
+
+new_type_instance = MyCustomType()
+DictProxyAccessor.add_serializable_type(new_type=MyCustomType, test_instance=new_type_instance)
+```
+
+This will add `MyCustomType` to the list of serializable types **only if** the instance `MyCustomType` can be serialized.
+
+Alternatively, you can add a type **directly** without verification:
+
+```python
+DictProxyAccessor.add_serializable_type(MyCustomType)
+```
+
+⚠ **Warning:** Adding a type without checking its serializability can lead to errors if the type is not compatible with serialization.
 
 ---
 
@@ -598,7 +628,7 @@ sérialisables supportés pour le moment sont :
 
 ```python
 serialized_types = (
-   Logger,  # Logger from loggerplusplus library is serialized since V0.1.2
+   Logger,  # Logger de la bibliothèque loggerplusplus (sérialisé depuis la version 0.1.2)
    int,
    float,
    str,
@@ -610,6 +640,35 @@ serialized_types = (
 )
 ```
 
+#### **Ajout de nouveaux types sérialisables**
+
+Depuis la version 0.1.2, il est possible d'ajouter dynamiquement de nouveaux types à la liste des types sérialisables en utilisant la méthode :
+
+```python
+@classmethod
+def add_serializable_type(cls, new_type: type, test_instance: Any = None) -> bool
+```
+
+##### **Exemples d'utilisation**
+
+Vous pouvez ajouter un nouveau type **avant** l'instanciation du brain via le `DictProxyAccessor`. Par exemple :
+
+```python
+from taskbrain import DictProxyAccessor
+
+new_type_instance = MyCustomType()
+DictProxyAccessor.add_serializable_type(new_type=MyCustomType, test_instance=new_type_instance)
+```
+
+Cela ajoutera `MyCustomType` à la liste des types sérialisables **uniquement si** l'instance `MyCustomType` peut être sérialisée.
+
+Alternativement, vous pouvez ajouter un type **directement** sans vérification :
+
+```python
+DictProxyAccessor.add_serializable_type(MyCustomType)
+```
+
+⚠ **Avertissement :** Ajouter un type sans vérifier sa sérialisation peut entraîner des erreurs si le type n'est pas compatible avec la sérialisation.
 Il est donc compliqué de passer en attribut partagé un objet complexe à utiliser dans un autre processus. Pour
 contourner ce problème, il est possible d’instancier directement dans le processus l’objet en question. Prenons
 l’exemple de l’utilisation d’une caméra. Son utilisation est gourmande en ressources, donc idéale pour du
