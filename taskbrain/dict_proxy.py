@@ -1,6 +1,7 @@
 # ====== Standard Library Imports ======
 from multiprocessing import Manager
 from typing import Any
+import pickle
 
 # ====== Third-Party Imports ======
 from loggerplusplus import Logger
@@ -17,6 +18,18 @@ class DictProxyAccessor:
         _name (str): The name of the object.
         _updated_attributes (Set[str]): A set of attributes that have been updated.
     """
+    # Tuple of all types that are considered serialized directly.
+    _serializable_types: tuple[type] = (
+        Logger,  # Logger from loggerplusplus library is serialized since V0.1.2
+        int,
+        float,
+        str,
+        list,
+        set,
+        dict,
+        tuple,
+        type(None),
+    )
 
     def __init__(self, name: str = "Undefined name") -> None:
         """
@@ -121,6 +134,34 @@ class DictProxyAccessor:
         """
         return self.__str__()
 
+
+    @classmethod
+    def add_serializable_type(cls, new_type: type, test_instance: Any = None) -> bool:
+        """
+        Add a new type to the set of serializable types.
+
+        Args:
+            new_type (type): The type to add.
+            test_instance (Any, optional): An instance of the type to test serialization.
+                                           If provided, it will be serialized to verify compatibility.
+
+        Returns:
+            bool: True if the type was successfully added, False otherwise.
+        """
+        if test_instance is not None:
+            tmp_logger = Logger(identifier="DictProxyAccessor", follow_logger_manager_rules=True)
+            try:
+                pickle.dumps(test_instance)  # Test if the instance can be serialized
+                cls._serializable_types += (new_type,)
+                tmp_logger.info(f"Type {new_type} is serializable")
+                return True
+            except (pickle.PickleError, TypeError) as e:
+                tmp_logger.error(f"The provided instance of {new_type} is not serializable - {e}")
+                return False
+        else:
+            cls._serializable_types.add(new_type)
+            return True
+
     @staticmethod
     def is_serialized(obj: Any) -> bool:
         """
@@ -132,20 +173,7 @@ class DictProxyAccessor:
         Returns:
             bool: True if the object is serialized, False otherwise.
         """
-        # Tuple of all types that are considered serialized directly.
-        serialized_types = (
-            Logger,  # Logger from loggerplusplus library is serialized since V0.1.2
-            int,
-            float,
-            str,
-            list,
-            set,
-            dict,
-            tuple,
-            type(None),
-        )
-
-        if isinstance(obj, serialized_types):
+        if isinstance(obj, DictProxyAccessor._serializable_types):
             return True
 
         # Special case for an object with a __name__ attribute equal to "CONFIG".
