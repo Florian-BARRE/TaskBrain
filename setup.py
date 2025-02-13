@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="taskbrain",
-    version="0.1.2",
+    version="0.1.3",
     author="Florian BARRE",
     author_email="florian.barre78@gmail.com",
     description="A simple and powerful task scheduler.",

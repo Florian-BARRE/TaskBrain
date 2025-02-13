@@ -73,20 +73,22 @@ class DictProxyAccessor:
                 f"'{type(self).__name__}' object has no attribute '{item}'"
             )
 
-    def __setattr__(self, key: str, value: Any) -> None:
+    def __setattr__(self, key: str, value: Any, ghost_add: bool = False) -> None:
         """
         Set an attribute or a key in the DictProxy object.
 
         Args:
             key (str): The name of the attribute or key.
             value (Any): The value to set.
+            ghost_add (bool, optional): If True, the attribute will be added to the DictProxy object but not to the updated attributes set. Defaults to False.
         """
         if key in ["_dict_proxy", "_name", "_updated_attributes"]:
             object.__setattr__(self, key, value)
         else:
             self._dict_proxy[key] = value
             if key not in self._updated_attributes:
-                self._updated_attributes.add(key)
+                if not ghost_add:
+                    self._updated_attributes.add(key)
 
     def get_updated_attributes(self) -> set[str]:
         """
@@ -134,7 +136,6 @@ class DictProxyAccessor:
         """
         return self.__str__()
 
-
     @classmethod
     def add_serializable_type(cls, new_type: type, test_instance: Any = None) -> bool:
         """
@@ -159,7 +160,7 @@ class DictProxyAccessor:
                 tmp_logger.error(f"The provided instance of {new_type} is not serializable - {e}")
                 return False
         else:
-            cls._serializable_types.add(new_type)
+            cls._serializable_types += (new_type,)
             return True
 
     @staticmethod
