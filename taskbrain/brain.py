@@ -246,7 +246,8 @@ class Brain:
                     setattr(self, key, self_shared_attr_value)
                     self.shared_self.remove_updated_attribute(key)
                 else:
-                    setattr(self.shared_self, key, self_attr_value)
+                    # By passed the virtual self to update the '_updated_attributes' list
+                    self.shared_self.__setattr__(key, self_attr_value, ghost_add=True)
 
     """
         Get evaluated tasks which need to be added to the background tasks of the application
