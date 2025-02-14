@@ -235,6 +235,9 @@ class Brain:
         Returns:
             None
         """
+        self.logger.debug(
+            f"Attributes updated in subprocess (shared_self) side: {self.shared_self.get_updated_attributes()}")
+
         for key in self.shared_self.get_dict().keys():
             self_attr_value = getattr(self, key)
             self_shared_attr_value = eval(f"self.shared_self.{key}")
@@ -245,9 +248,13 @@ class Brain:
                 if key in self.shared_self.get_updated_attributes():
                     setattr(self, key, self_shared_attr_value)
                     self.shared_self.remove_updated_attribute(key)
+                    self.logger.debug(
+                        f"Synchronized attribute [{key}], from shared_self to self. (Value: {self_shared_attr_value})")
                 else:
                     # By passed the virtual self to update the '_updated_attributes' list
                     self.shared_self.__setattr__(key, self_attr_value, ghost_add=True)
+                    self.logger.debug(
+                        f"Synchronized attribute [{key}], from self to shared_self. (Value: {self_attr_value})")
 
     """ 
         Get evaluated tasks which need to be added to the background tasks of the application

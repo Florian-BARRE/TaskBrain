@@ -6,6 +6,8 @@ import pickle
 # ====== Third-Party Imports ======
 from loggerplusplus import Logger
 
+dict_proxy_accessor_logger = Logger(identifier="DictProxyAccessor", follow_logger_manager_rules=True)
+
 
 # ====== Class Part ======
 class DictProxyAccessor:
@@ -168,19 +170,19 @@ class DictProxyAccessor:
         Returns:
             bool: True if the type was successfully added, False otherwise.
         """
-        tmp_logger = Logger(identifier="DictProxyAccessor", follow_logger_manager_rules=True)
         if test_instance is not None:
             try:
                 pickle.dumps(test_instance)  # Test if the instance can be serialized
-                tmp_logger.info(f"Type {new_type} is serializable")
+                dict_proxy_accessor_logger.info(f"Type {new_type} is serializable")
             except (pickle.PickleError, TypeError) as e:
-                tmp_logger.error(f"The provided instance of {new_type} is not serializable - {e}")
+                dict_proxy_accessor_logger.error(f"The provided instance of {new_type} is not serializable - {e}")
                 return False
         else:
-            tmp_logger.warning(f"No test instance provided, the type ({new_type}) will be added without verification")
+            dict_proxy_accessor_logger.warning(
+                f"No test instance provided, the type ({new_type}) will be added without verification")
 
         cls._serializable_types += (new_type,)
-        tmp_logger.info(f"Type {new_type} is added to the list of serializable types")
+        dict_proxy_accessor_logger.info(f"Type {new_type} is added to the list of serializable types")
         return True
 
     @staticmethod
