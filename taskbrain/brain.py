@@ -113,7 +113,7 @@ class Brain:
             ):
                 # Try to serialize the attribute
                 if DictProxyAccessor.is_serialized(value):
-                    setattr(self.shared_self, name, value)
+                    self.shared_self.__setattr__(name, value, ghost_add=True)
                 else:
                     self.logger.warning(
                         f"[dynamic_init] cannot serialize attribute [{name}]."
@@ -249,7 +249,7 @@ class Brain:
                     # By passed the virtual self to update the '_updated_attributes' list
                     self.shared_self.__setattr__(key, self_attr_value, ghost_add=True)
 
-    """
+    """ 
         Get evaluated tasks which need to be added to the background tasks of the application
     """
 
@@ -288,3 +288,16 @@ class Brain:
             str: The class name.
         """
         return self.__class__.__name__
+
+    def add_attributes_to_synchronize(self, *args: str) -> None:
+        """
+        Fake function to avoid IDE warning, it is implemented in the DictProxyAccessor class.
+
+        Args:
+            *args (str): The names of the attributes to add.
+        """
+        self.logger.warning(
+            "This function is a fake function, it is implemented in the DictProxyAccessor class. "
+            "It shouldn't be called. "
+            "Only use this function in a subprocess task !"
+        )

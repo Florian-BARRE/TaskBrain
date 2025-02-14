@@ -16,7 +16,7 @@ class DictProxyAccessor:
     Attributes:
         _dict_proxy (Manager.dict): The dictionary proxy object being wrapped.
         _name (str): The name of the object.
-        _updated_attributes (Set[str]): A set of attributes that have been updated.
+        _dict_proxy['_updated_attributes'] (Set[str]): A set of attributes that have been updated.
     """
     # Tuple of all types that are considered serialized directly.
     _serializable_types: tuple[type] = (
@@ -40,7 +40,10 @@ class DictProxyAccessor:
         """
         self._dict_proxy: Manager.dict = Manager().dict()
         self._name: str = name
-        self._updated_attributes: set[str] = set()
+
+        # Store the set of attributes that have been updated (subprocess side) in a
+        # Manager.dict to allow access from the main process.
+        self._dict_proxy["_updated_attributes"]: set[str] = set()
 
     def __getattr__(self, item: str) -> Any:
         """
@@ -55,7 +58,7 @@ class DictProxyAccessor:
         Raises:
             AttributeError: If the attribute or key does not exist.
         """
-        if item in ["_dict_proxy", "_name", "_updated_attributes"]:
+        if item in ["_dict_proxy", "_name"]:
             return object.__getattribute__(self, item)
 
         try:
@@ -65,12 +68,13 @@ class DictProxyAccessor:
         except AttributeError:
             pass  # If the attribute does not exist, continue to check in _dict_proxy
 
-            # Attempt to access an item in _dict_proxy if it is not a method
+        # Attempt to access an item in _dict_proxy if it is not a method
         try:
             return self._dict_proxy[item]
         except KeyError:
             raise AttributeError(
-                f"'{type(self).__name__}' object has no attribute '{item}'"
+                f"'{type(self).__name__}' object has no attribute '{item}'. "
+                f"Available attributes: {self._dict_proxy.keys()}"
             )
 
     def __setattr__(self, key: str, value: Any, ghost_add: bool = False) -> None:
@@ -80,15 +84,27 @@ class DictProxyAccessor:
         Args:
             key (str): The name of the attribute or key.
             value (Any): The value to set.
-            ghost_add (bool, optional): If True, the attribute will be added to the DictProxy object but not to the updated attributes set. Defaults to False.
+            ghost_add (bool, optional): If True, the attribute will be added to the DictProxy object
+                but not to the updated attributes set. Defaults to False.
         """
-        if key in ["_dict_proxy", "_name", "_updated_attributes"]:
+        if key in ["_dict_proxy", "_name"]:
             object.__setattr__(self, key, value)
         else:
             self._dict_proxy[key] = value
-            if key not in self._updated_attributes:
+            if key not in self._dict_proxy["_updated_attributes"]:
                 if not ghost_add:
-                    self._updated_attributes.add(key)
+                    self.add_attributes_to_synchronize(key)
+
+    def add_attributes_to_synchronize(self, *args: str) -> None:
+        """
+        Add attributes to the updated attributes set.
+
+        Args:
+            *args (str): The names of the attributes to add.
+        """
+        for key in args:
+            self._dict_proxy["_updated_attributes"] |= {
+                key}  # Add the key to the set via union ('add' method does not work)
 
     def get_updated_attributes(self) -> set[str]:
         """
@@ -97,7 +113,7 @@ class DictProxyAccessor:
         Returns:
             Set[str]: The set of updated attribute names.
         """
-        return self._updated_attributes
+        return self._dict_proxy["_updated_attributes"]
 
     def remove_updated_attribute(self, key: str) -> None:
         """
@@ -106,8 +122,10 @@ class DictProxyAccessor:
         Args:
             key (str): The name of the attribute to remove.
         """
-        if key in self._updated_attributes:
-            self._updated_attributes.remove(key)
+        if key in self._dict_proxy["_updated_attributes"]:
+            # self._dict_proxy["_updated_attributes"].discard(key)  # Remove the key from the set via discard
+            self._dict_proxy["_updated_attributes"] -= {
+                key}  # Remove the key from the set via difference ('remove' method does not work)
 
     def get_dict(self) -> dict:
         """
@@ -116,7 +134,8 @@ class DictProxyAccessor:
         Returns:
             dict: The dictionary representation of the DictProxy object.
         """
-        return dict(self._dict_proxy.items())
+        # Exclude the "_updated_attributes" key from the returned dictionary (it is a protected key)
+        return {k: v for k, v in self._dict_proxy.items() if k != "_updated_attributes"}
 
     def __str__(self) -> str:
         """
@@ -149,19 +168,20 @@ class DictProxyAccessor:
         Returns:
             bool: True if the type was successfully added, False otherwise.
         """
+        tmp_logger = Logger(identifier="DictProxyAccessor", follow_logger_manager_rules=True)
         if test_instance is not None:
-            tmp_logger = Logger(identifier="DictProxyAccessor", follow_logger_manager_rules=True)
             try:
                 pickle.dumps(test_instance)  # Test if the instance can be serialized
-                cls._serializable_types += (new_type,)
                 tmp_logger.info(f"Type {new_type} is serializable")
-                return True
             except (pickle.PickleError, TypeError) as e:
                 tmp_logger.error(f"The provided instance of {new_type} is not serializable - {e}")
                 return False
         else:
-            cls._serializable_types += (new_type,)
-            return True
+            tmp_logger.warning(f"No test instance provided, the type ({new_type}) will be added without verification")
+
+        cls._serializable_types += (new_type,)
+        tmp_logger.info(f"Type {new_type} is added to the list of serializable types")
+        return True
 
     @staticmethod
     def is_serialized(obj: Any) -> bool:
