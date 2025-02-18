@@ -43,6 +43,8 @@ class Brain:
     only serializable data can be shared. More over the data synchronization is not real-time, it is done by a routine.
     Subprocesses are useful to execute heavy tasks or tasks that can block the main process.
     """
+    # Refresh rate for the synchronization of the attributes between the instance and the shared_self
+    sync_self_and_shared_self_refresh_rate: float = 0.01
 
     _pending_tasks: tuple[
         Callable,
@@ -281,7 +283,7 @@ class Brain:
                 )
                 self.__async_functions.append(
                     lambda: AsynchronousWrapper.wrap_to_routine(
-                        self, self.__sync_self_and_shared_self, 0.01
+                        self, self.__sync_self_and_shared_self, Brain.sync_self_and_shared_self_refresh_rate
                     )
                 )
 

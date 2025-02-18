@@ -240,6 +240,104 @@ def camera_in_other_process(self):
    camera.capture()
    # ... image processing ... #
 ```
+## Synchronization of Shared Attributes
+
+When using shared attributes between different processes, it is essential to understand how their synchronization mechanism works, **especially** when dealing with custom types (for example, a user-defined class).
+
+> **Note**  
+> This section only applies when your *task* is executed in another process (`Brain.task(process=True)`).
+
+---
+
+### Direct Assignment vs. Internal Modification
+
+- **Direct Assignment**  
+  When you assign a new value to a shared attribute, for example:
+  ```python
+  self.my_attribute = new_value
+  ```
+  the `Brain` automatically detects the change and propagates it to the other processes.
+
+- **Internal Modification of the Object**  
+  However, if you modify the **internal state** of an attribute by calling a method, like so:
+  ```python
+  self.my_attribute.update(new_value)
+  ```
+  the `Brain` does **not** capture this implicit modification, because it does not detect that the object itself has changed.  
+  As a result, synchronization will not happen automatically across different processes.
+
+---
+
+### Explicitly Marking the Attribute to Be Synchronized
+
+To solve this issue, you must **manually** indicate to the `Brain` that the attribute should be re-synchronized after an internal modification. To do this, use the method:
+
+```python
+self.add_attributes_to_synchronize("my_attribute")
+```
+
+Thus, at the next iteration, the `Brain` will handle syncing the attribute’s new value with the other processes.
+
+---
+
+### Code Example
+
+Suppose you have a `MyObject` class that offers an `update` method to modify its internal state:
+
+```python
+class MyObject:
+    def __init__(self, initial_value):
+        self.value = initial_value
+    
+    def update(self, new_value):
+        # Internal update logic
+        self.value = new_value
+```
+
+You then use it within a class managed by a “brain” (or a synchronization system):
+
+```python
+class MainBrain(Brain):
+    def __init__(self, logger: Logger, my_attribute: MyObject) -> None:
+        # my_attribute is an object shared between multiple processes
+        # the dynamic init automatically instantiates it as a class attribute
+        super().__init__(logger, self)
+    
+    @Brain.task(process=True, run_on_start=True)
+    def do_something(self, new_value):
+        # Modify the attribute by calling the object's method
+        self.my_attribute.update(new_value)
+
+        # Explicitly indicate to the 'brain' that this attribute must be re-synchronized
+        self.add_attributes_to_synchronize("my_attribute")
+```
+
+In the example above:
+
+1. **Assignment**  
+   - If we had done:
+     ```python
+     self.my_attribute = MyObject(initial_value=42)
+     ```
+     the change would have been automatically detected and synchronized.
+
+2. **Internal Modification**  
+   - By calling:
+     ```python
+     self.my_attribute.update(42)
+     ```
+     the `brain` does not know it has to update the shared value, **unless** we add:
+     ```python
+     self.add_attributes_to_synchronize("my_attribute")
+     ```
+
+## Changing the synchronization frequency
+
+It is possible to change the synchronization frequency of attributes shared between processes. By default, the frequency is 0.01 seconds. To change this frequency, simply modify the `sync_self_and_shared_self_refresh_rate` attribute of the `Brain` base class:
+```python
+from taskbrain import Brain
+Brain.sync_self_and_shared_self_refresh_rate = 0.1
+```
 
 ---
 
@@ -761,7 +859,109 @@ def camera_in_other_process(self):
 
    # ... traitement d'image ... #
 ```
+## Synchronisation des attributs partagés
 
+Lorsqu’on utilise des attributs partagés entre différents processus, il est essentiel de bien comprendre leur mécanisme de synchronisation, **en particulier** quand on manipule des types personnalisés (par exemple, une classe définie par l’utilisateur).
+
+> **Note**  
+> Cette partie s’applique **uniquement** lorsque votre *task* est exécutée dans un autre processus (`Brain.task(process=True)`).
+---
+
+### Attribution directe vs. modification interne
+
+- **Attribution directe**  
+  Lorsque vous affectez une nouvelle valeur à un attribut partagé, par exemple:
+
+  ```python
+  self.mon_attribut = nouvelle_valeur
+  ```
+
+  Le `Brain` détecte automatiquement le changement et le répercute dans les autres processus.
+
+- **Modification interne de l’objet**  
+  En revanche, si vous modifiez **l’état interne** d’un attribut via l’appel à une méthode, comme ceci:
+
+  ```python
+  self.mon_attribut.methode(nouvelle_valeur)
+  ```
+
+  Le `Brain` ne capture **pas** cette modification implicite, car il ne détecte pas que l’objet lui-même a changé.  
+  Par conséquent, la synchronisation ne se fait pas automatiquement entre les différents processus.
+
+---
+
+### Marquer explicitement l’attribut à synchroniser
+
+Pour résoudre ce problème, il faut **manuellement** indiquer au `Brain` que l’attribut doit être resynchronisé après la modification interne. Pour ce faire, utilisez la méthode :
+
+```python
+self.add_attributes_to_synchronize("mon_attribut")
+```
+
+Ainsi, lors de l’itération suivante, le `Brain` se chargera de synchroniser la nouvelle valeur de l’attribut avec les autres processus.
+
+---
+
+### Exemple de code
+
+Supposons que vous ayez une classe `MonObjet` qui offre une méthode `mise_a_jour` pour modifier son état interne :
+
+```python
+class MonObjet:
+    def __init__(self, valeur_initiale):
+        self.valeur = valeur_initiale
+    
+    def mise_a_jour(self, nouvelle_valeur):
+        # Logique interne de mise à jour
+        self.valeur = nouvelle_valeur
+```
+
+Vous l’utilisez ensuite au sein d’une classe gérée par un «brain» (ou un système de synchronisation) :
+
+```python
+class MainBrain(Brain):
+    def __init__(self, logger: Logger, mon_attribut: MonObjet) -> None:
+        # mon_attribut est un objet partagé entre plusieurs processus
+        # le dynamic init l'instancie automatiquement en attribut de la classe
+        super().__init__(logger, self)
+    
+    @Brain.task(process=True, run_on_start=True)
+    def faire_quelque_chose(self, nouvelle_valeur):
+        # Modification de l'attribut par une méthode de l'objet
+        self.mon_attribut.mise_a_jour(nouvelle_valeur)
+
+        # Indiquer explicitement au 'brain' que cet attribut doit être resynchronisé
+        self.add_attributes_to_synchronize("mon_attribut")
+```
+
+Dans l’exemple ci-dessus :
+
+1. **Attribution**  
+   - Si on avait fait :  
+     ```python
+     self.mon_attribut = MonObjet(valeur_initiale=42)
+     ```  
+     Le changement aurait été automatiquement détecté et synchronisé.
+
+2. **Modification interne**  
+   - En appelant :  
+     ```python
+     self.mon_attribut.mise_a_jour(42)
+     ```  
+     Le `brain` ne sait pas qu’il faut mettre à jour la valeur partagée, **sauf** si on ajoute :  
+     ```python
+     self.add_attributes_to_synchronize("mon_attribut")
+     ```
+     
+## Changer la fréquence de synchronisation
+
+Il est possible de changer la fréquence de synchronisation des attributs partagés entre les processus. Par défaut, la fréquence est de 0.01 seconde. Pour changer cette fréquence, il suffit de changer l'attribut `sync_self_and_shared_self_refresh_rate` de la classe mère `Brain`:
+```python
+from taskbrain import Brain
+Brain.sync_self_and_shared_self_refresh_rate = 0.1
+```
+
+---
 ## Points de vigilances, limitations et précisions
 
 Bien que l’utilisation du Brain soit pratique, certains points sont à surveiller pour en tirer son plein potentiel.
